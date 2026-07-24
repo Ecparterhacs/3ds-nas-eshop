@@ -351,6 +351,24 @@ static void render_bottom(Ui *ui, const Game *games, int game_count, int selecte
     }
 }
 
+static void render_bottom_install_shell(Ui *ui, int game_count)
+{
+    u32 status_color = game_count > 0 ? COLOR_OK : COLOR_BAD;
+
+    /*
+     * Do not render the normal details page below the modal. Normal text is
+     * drawn at z=0.5 while the modal panels use lower rectangle depths, so
+     * depth testing would let the old title, metadata and buttons bleed
+     * through the modal background even though the modal was submitted later.
+     */
+    C2D_TargetClear(ui->bottom, COLOR_BG);
+    C2D_SceneBegin(ui->bottom);
+    C2D_DrawRectSolid(0, 0, 0.1f, 320, 35, COLOR_HEADER);
+    C2D_DrawRectSolid(0, 32, 0.2f, 320, 3, COLOR_ORANGE_2);
+    draw_text(ui, "商品详情 / DETAILS", 14, 6, 0.54f, COLOR_WHITE, 286);
+    C2D_DrawCircleSolid(297, 16, 0.3f, 6, status_color);
+}
+
 static void render_install_overlay(Ui *ui, const Game *games, int game_count,
                                    int selected, const InstallProgress *install)
 {
@@ -492,10 +510,12 @@ void ui_render(Ui *ui, const Game *games, int game_count, int selected,
     C2D_TextBufClear(ui->text_buf);
     C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
     render_top(ui, games, game_count, selected);
-    render_bottom(ui, games, game_count, selected, status, http_debug,
-                  parse_info, show_debug);
     if (install) {
+        render_bottom_install_shell(ui, game_count);
         render_install_overlay(ui, games, game_count, selected, install);
+    } else {
+        render_bottom(ui, games, game_count, selected, status, http_debug,
+                      parse_info, show_debug);
     }
     C3D_FrameEnd(0);
 }
