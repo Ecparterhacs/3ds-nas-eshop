@@ -2,6 +2,7 @@
 #include "bmp_util.h"
 #include "config.h"
 
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -13,7 +14,7 @@
 #define COLOR_ACCENT   C2D_Color32(29, 169, 181, 255)
 #define COLOR_GOLD     C2D_Color32(241, 126, 36, 255)
 #define COLOR_TEXT     C2D_Color32(52, 65, 70, 255)
-#define COLOR_MUTED    C2D_Color32(111, 132, 137, 255)
+#define COLOR_MUTED    C2D_Color32(84, 105, 110, 255)
 #define COLOR_LINE     C2D_Color32(200, 217, 219, 255)
 #define COLOR_SHADOW   C2D_Color32(177, 197, 199, 150)
 #define COLOR_OK       C2D_Color32(72, 184, 104, 255)
@@ -25,12 +26,9 @@ static void draw_text(Ui *ui, const char *value, float x, float y, float scale,
 {
     C2D_Text text;
     float measured_width = 0.0f;
-    float measured_height = 0.0f;
-    float fit = 1.0f;
+    float crisp_scale;
     float fitted_scale;
-    unsigned line_count = 1;
     const char *input = value && value[0] ? value : "-";
-    const char *cursor;
 
     if (ui->use_zh_font) {
         C2D_TextFontParse(&text, ui->zh_font, ui->text_buf, input);
@@ -40,30 +38,26 @@ static void draw_text(Ui *ui, const char *value, float x, float y, float scale,
     C2D_TextOptimize(&text);
 
     /*
-     * The Chinese system font reports a substantially taller glyph box than
-     * citro2d's default font. Fixed scales and WordWrap therefore produce
-     * extra lines that overlap the next UI row on real hardware. Measure the
-     * parsed font, fit it into one nominal 32 px line per explicit newline,
-     * and treat wrap_width as a single-line width limit. Only explicit '\n'
-     * characters are allowed to create another row.
+     * Keep glyph origins on physical pixels and choose scales from a small,
+     * repeatable grid. This avoids the soft, uneven strokes produced when the
+     * 3DS samples its system-font atlas at arbitrary sub-pixel positions.
+     * Width fitting remains single-line: only an explicit '\n' creates a new
+     * row, so a long title cannot overlap the UI below it.
      */
-    for (cursor = input; *cursor; ++cursor) {
-        if (*cursor == '\n') ++line_count;
-    }
+    x = floorf(x + 0.5f);
+    y = floorf(y + 0.5f);
+    crisp_scale = floorf(scale * 32.0f + 0.5f) / 32.0f;
+    if (crisp_scale < 1.0f / 32.0f) crisp_scale = 1.0f / 32.0f;
+    fitted_scale = crisp_scale;
     C2D_TextGetDimensions(
-        &text, scale, scale, &measured_width, &measured_height);
-    if (measured_height > 0.0f) {
-        float maximum_height = 32.0f * scale * (float)line_count;
-        if (measured_height > maximum_height) {
-            fit = maximum_height / measured_height;
+        &text, crisp_scale, crisp_scale, &measured_width, NULL);
+    if (wrap_width > 0.0f && measured_width > wrap_width) {
+        fitted_scale = crisp_scale * wrap_width / measured_width;
+        fitted_scale = floorf(fitted_scale * 64.0f) / 64.0f;
+        if (fitted_scale < 1.0f / 64.0f) {
+            fitted_scale = 1.0f / 64.0f;
         }
     }
-    if (wrap_width > 0.0f && measured_width > 0.0f &&
-        measured_width * fit > wrap_width) {
-        float width_fit = wrap_width / measured_width;
-        if (width_fit < fit) fit = width_fit;
-    }
-    fitted_scale = scale * fit;
     C2D_DrawText(&text, C2D_WithColor, x, y, 0.5f,
                  fitted_scale, fitted_scale, color);
 }
@@ -176,6 +170,9 @@ bool ui_init(Ui *ui)
     ui->text_buf = C2D_TextBufNew(8192);
     ui->zh_font = C2D_FontLoadSystem(CFG_REGION_CHN);
     ui->use_zh_font = ui->zh_font != NULL;
+    if (ui->zh_font) {
+        C2D_FontSetFilter(ui->zh_font, GPU_NEAREST, GPU_NEAREST);
+    }
     return ui->top && ui->bottom && ui->text_buf;
 }
 
@@ -394,38 +391,38 @@ static void render_install_overlay(Ui *ui, const Game *games, int game_count,
                   install->mode == INSTALL_MODE_STAGED
                       ? "下载到 SD 卡后安装"
                       : "确认极速直装",
-                  17, 45, 0.38f, COLOR_WHITE, 0);
+                  17, 44, 0.44f, COLOR_WHITE, 0);
         if (game) {
             clip_text_units(game->title, title_text, sizeof(title_text), 38);
-            draw_text(ui, title_text, 18, 82, 0.44f, COLOR_TEXT, 280);
+            draw_text(ui, title_text, 18, 81, 0.48f, COLOR_TEXT, 280);
             snprintf(text, sizeof(text), "文件大小：%.1f MB", game->size_mb);
-            draw_text(ui, text, 18, 124, 0.36f, COLOR_MUTED, 0);
+            draw_text(ui, text, 18, 123, 0.40f, COLOR_MUTED, 0);
             draw_text(ui,
                       install->mode == INSTALL_MODE_STAGED
                           ? "成功后自动删除缓存；失败时保留。"
                           : "安装期间请勿关机或拔出 SD 卡。",
-                      18, 148, 0.34f, COLOR_BAD, 0);
+                      18, 148, 0.36f, COLOR_BAD, 276);
         }
         C2D_DrawRectSolid(18, 190, 0.40f, 125, 31, COLOR_PANEL_2);
-        draw_text(ui, "B 取消", 57, 197, 0.39f, COLOR_MUTED, 0);
+        draw_text(ui, "B 取消", 54, 196, 0.42f, COLOR_MUTED, 0);
         C2D_DrawRectSolid(163, 190, 0.40f, 130, 31, COLOR_ACCENT);
-        draw_text(ui, "A 开始安装", 190, 197, 0.39f, COLOR_WHITE, 0);
+        draw_text(ui, "A 开始安装", 185, 196, 0.42f, COLOR_WHITE, 0);
         return;
     }
 
     if (install->stage == INSTALL_STAGE_SUCCESS) {
-        draw_text(ui, "安装完成", 17, 45, 0.38f, COLOR_WHITE, 0);
+        draw_text(ui, "安装完成", 17, 44, 0.44f, COLOR_WHITE, 0);
     } else if (install->stage == INSTALL_STAGE_ERROR) {
-        draw_text(ui, "安装失败", 17, 45, 0.38f, COLOR_WHITE, 0);
+        draw_text(ui, "安装失败", 17, 44, 0.44f, COLOR_WHITE, 0);
     } else if (install->stage == INSTALL_STAGE_CANCELLED) {
-        draw_text(ui, "安装已取消", 17, 45, 0.38f, COLOR_WHITE, 0);
+        draw_text(ui, "安装已取消", 17, 44, 0.44f, COLOR_WHITE, 0);
     } else if (install->stage == INSTALL_STAGE_DOWNLOADING) {
-        draw_text(ui, "正在下载到 SD 卡", 17, 45, 0.38f, COLOR_WHITE, 0);
+        draw_text(ui, "正在下载到 SD 卡", 17, 44, 0.44f, COLOR_WHITE, 0);
     } else if (install->mode == INSTALL_MODE_STAGED &&
                install->stage == INSTALL_STAGE_INSTALLING) {
-        draw_text(ui, "正在从 SD 卡安装", 17, 45, 0.38f, COLOR_WHITE, 0);
+        draw_text(ui, "正在从 SD 卡安装", 17, 44, 0.44f, COLOR_WHITE, 0);
     } else {
-        draw_text(ui, "正在下载并安装", 17, 45, 0.38f, COLOR_WHITE, 0);
+        draw_text(ui, "正在下载并安装", 17, 44, 0.44f, COLOR_WHITE, 0);
     }
 
     /*
@@ -434,7 +431,7 @@ static void render_install_overlay(Ui *ui, const Game *games, int game_count,
      * so their glyph boxes cannot overlap on real hardware.
      */
     clip_text_units(install->message, message_text, sizeof(message_text), 42);
-    draw_text(ui, message_text, 18, 82, 0.27f, COLOR_TEXT, 274);
+    draw_text(ui, message_text, 18, 81, 0.34f, COLOR_TEXT, 274);
 
     if (install->stage == INSTALL_STAGE_CONNECTING ||
         install->stage == INSTALL_STAGE_DOWNLOADING ||
@@ -452,7 +449,7 @@ static void render_install_overlay(Ui *ui, const Game *games, int game_count,
         } else {
             snprintf(text, sizeof(text), "0%%   Preparing connection...");
         }
-        draw_text(ui, text, 18, 130, 0.36f, COLOR_MUTED, 274);
+        draw_text(ui, text, 18, 129, 0.42f, COLOR_MUTED, 274);
 
         if (install->bytes_per_second >= 1024.0 * 1024.0) {
             snprintf(speed_text, sizeof(speed_text), "SPEED  %.2f MB/s",
@@ -472,33 +469,33 @@ static void render_install_overlay(Ui *ui, const Game *games, int game_count,
         } else {
             snprintf(eta_text, sizeof(eta_text), "ETA  --:--");
         }
-        draw_text(ui, speed_text, 18, 155, 0.46f, COLOR_ACCENT, 174);
-        draw_text(ui, eta_text, 207, 158, 0.36f, COLOR_MUTED, 85);
+        draw_text(ui, speed_text, 18, 154, 0.50f, COLOR_ACCENT, 174);
+        draw_text(ui, eta_text, 207, 156, 0.40f, COLOR_MUTED, 85);
 
         if (install->title_id != 0) {
             snprintf(text, sizeof(text), "Title ID %016llX%s",
                      (unsigned long long)install->title_id,
                      install->replacing ? "  [overwrite]" : "");
-            draw_text(ui, text, 18, 182, 0.28f, COLOR_MUTED, 274);
+            draw_text(ui, text, 18, 181, 0.31f, COLOR_MUTED, 274);
         } else {
-            draw_text(ui, "正在准备安全的 SD 卡安装…", 18, 182, 0.28f,
+            draw_text(ui, "正在准备安全的 SD 卡安装…", 18, 181, 0.31f,
                       COLOR_MUTED, 0);
         }
         C2D_DrawRectSolid(198, 198, 0.40f, 94, 26, COLOR_PANEL_2);
-        draw_text(ui, "B 取消", 225, 203, 0.34f, COLOR_BAD, 0);
+        draw_text(ui, "B 取消", 222, 202, 0.38f, COLOR_BAD, 0);
     } else {
         if (install->title_id != 0) {
             snprintf(text, sizeof(text), "Title ID %016llX",
                      (unsigned long long)install->title_id);
-            draw_text(ui, text, 18, 128, 0.34f, COLOR_MUTED, 0);
+            draw_text(ui, text, 18, 128, 0.38f, COLOR_MUTED, 276);
         }
         if (R_FAILED(install->service_result)) {
             snprintf(text, sizeof(text), "Result %08lX",
                      (unsigned long)install->service_result);
-            draw_text(ui, text, 18, 156, 0.34f, COLOR_BAD, 0);
+            draw_text(ui, text, 18, 156, 0.38f, COLOR_BAD, 0);
         }
         C2D_DrawRectSolid(178, 190, 0.40f, 114, 31, COLOR_ACCENT);
-        draw_text(ui, "A / B 返回", 201, 197, 0.36f, COLOR_WHITE, 0);
+        draw_text(ui, "A / B 返回", 197, 196, 0.40f, COLOR_WHITE, 0);
     }
 }
 
