@@ -13,6 +13,20 @@
 项目不包含游戏、Title Key、系统文件或任何 Nintendo 版权内容。
 请仅处理你合法拥有并自行备份的内容。
 
+## 设计预览
+
+> 以下图片是按当前 UI 配色和结构绘制的设计预览，不是真机截图。
+> 预览使用虚构游戏名和示例地址；真机字体渲染、字号和间距可能略有差异。
+
+<p align="center">
+  <img src="docs/images/library.svg" alt="3DS NAS eShop 游戏库设计预览" width="96%">
+</p>
+
+<p align="center">
+  <img src="docs/images/details.svg" alt="商品详情与安装按钮设计预览" width="48%">
+  <img src="docs/images/install-progress.svg" alt="下载和安装进度设计预览" width="48%">
+</p>
+
 ## 功能
 
 - 浏览数百个 `.cia`、`.3ds` 和 `.3dsx` 文件。
