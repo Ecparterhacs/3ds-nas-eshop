@@ -1,0 +1,24 @@
+build/
+*.3dsx
+*.elf
+*.map
+*.smdh
+.dkp-cache/
+.dkp-root/
+.DS_Store
+__pycache__/
+*.py[cod]
+.env
+
+# Generated cover-scraper caches/reports.
+data/*.json
+scripts/k73-3ds-catalog.json
+scripts/k73-auto-cover-report.json
+
+# Runtime server data: databases, covers and user-owned game files.
+server/data/
+*.db
+*.db-shm
+*.db-wal
+*.cia
+*.3ds
