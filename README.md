@@ -13,6 +13,14 @@
 项目不包含游戏、Title Key、系统文件或任何 Nintendo 版权内容。
 请仅处理你合法拥有并自行备份的内容。
 
+<p align="center">
+  <img src="docs/images/3ds-nas-eshop-showcase.png" alt="3DS NAS eShop 双屏界面效果展示" width="88%">
+</p>
+
+<p align="center">
+  <sub>项目 UI 合成效果展示；真机字体、封面和游戏内容以实际运行结果为准。</sub>
+</p>
+
 ## 设计预览
 
 > 以下图片是按当前 UI 配色和结构绘制的设计预览，不是真机截图。
