@@ -12,4 +12,4 @@
 #define HTTP_INITIAL_CAPACITY (256u * 1024u)
 #define HTTP_MAX_CAPACITY (2u * 1024u * 1024u)
 
-#define CLIENT_BUILD "20260725-crispfont1"
+#define CLIENT_BUILD "1.0.0"

@@ -7,6 +7,10 @@
 - NAS 使用固定 IP 或 DHCP 静态租约。
 - Mac/Linux 已安装 devkitPro 3DS 工具链、devkitARM、libctru、
   citro2d 和 citro3d。
+- 构建 HOME 菜单 CIA 时还需要
+  [makerom](https://github.com/3DSGuy/Project_CTR/releases) 和
+  [bannertool](https://github.com/iamcco/bannertool/releases)，并确保两个
+  命令位于 `PATH` 中。
 
 ## 编译
 
@@ -19,7 +23,7 @@ export DEVKITARM="$DEVKITPRO/devkitARM"
 export PATH="$DEVKITPRO/tools/bin:$DEVKITARM/bin:$PATH"
 
 make clean
-make NAS_HOST=192.168.1.123 NAS_PORT=40441 -j4
+make release NAS_HOST=192.168.1.123 NAS_PORT=40441 -j4
 make test
 ```
 
@@ -38,7 +42,44 @@ include $(DEVKITARM)/3ds_rules
 -lcitro2d -lcitro3d -lctru -lm
 ```
 
-## 安装 `.3dsx`
+构建目标：
+
+```text
+make          只生成 .3dsx 与 .smdh
+make cia      只生成 HOME 菜单 .cia
+make release  同时生成 .3dsx、.smdh 与 .cia
+```
+
+## 安装 `.cia` 到 HOME 菜单（推荐）
+
+`3ds-eshop-client.cia` 是可由 FBI 安装的正式应用包，包含：
+
+- 橙色购物袋 HOME 菜单图标。
+- 选中应用时显示的 3DS NAS eShop 上屏横幅。
+- 中文和英文应用名称。
+- 网络、SD 卡访问和 AM 安装所需权限。
+
+可以把 CIA 复制到 SD 卡，在 FBI 中选择文件后执行
+`Install CIA` / `Install and delete CIA`。也可以把它放在 NAS：
+
+```text
+/volume2/myfile/3dsrom/static/3ds-eshop-client.cia
+```
+
+然后在 FBI 中选择：
+
+```text
+Remote Install → Install from URL
+http://<NAS_IP>:40441/static/3ds-eshop-client.cia
+```
+
+退出 FBI 后，HOME 菜单会出现应用图标。固定 Title ID 为
+`000400000E5A1000`；安装后续版本时会覆盖升级，不会每次产生一个新图标。
+
+`.3dsx` 不能直接安装到 HOME 菜单。FBI 即使下载了 `.3dsx`，它仍然只能
+从 Homebrew Launcher 启动。
+
+## 安装 `.3dsx`（兼容方式）
 
 标准方式是复制到 3DS SD 卡，而不是把 `.3dsx` 当作 CIA 安装。
 

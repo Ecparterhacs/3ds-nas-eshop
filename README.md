@@ -123,14 +123,15 @@ background startup, and DSM Task Scheduler configuration, see the
 
 ### 2. Build the 3DS client
 
-You need devkitARM, libctru, citro2d, and citro3d:
+The `.3dsx` build requires devkitARM, libctru, citro2d, and citro3d.
+Creating a HOME Menu package also requires `makerom` and `bannertool`:
 
 ```sh
 export DEVKITPRO=/opt/devkitpro
 export DEVKITARM="$DEVKITPRO/devkitARM"
 export PATH="$DEVKITPRO/tools/bin:$DEVKITARM/bin:$PATH"
 
-make NAS_HOST=192.168.1.123 NAS_PORT=40441 -j4
+make release NAS_HOST=192.168.1.123 NAS_PORT=40441 -j4
 ```
 
 Replace `192.168.1.123` with the fixed LAN address of your NAS. The build
@@ -139,12 +140,30 @@ produces:
 ```text
 3ds-eshop-client.3dsx
 3ds-eshop-client.smdh
+3ds-eshop-client.cia
 ```
 
 See [building and installing the client](docs/CLIENT.md) for the complete
 guide (currently in Chinese).
 
-### 3. Copy the client to your 3DS
+### 3. Install to the 3DS HOME Menu (recommended)
+
+Download `3ds-eshop-client.cia` from the
+[latest release](https://github.com/Ecparterhacs/3ds-nas-eshop/releases/latest),
+copy it to the SD card, and install it with FBI. Alternatively, place the CIA
+in the NAS `static/` directory and use the following option in FBI:
+
+```text
+Remote Install → Install from URL
+http://<NAS_IP>:40441/static/3ds-eshop-client.cia
+```
+
+After installation, exit FBI. The orange shopping-bag icon will appear on the
+HOME Menu and launches the client directly, without Homebrew Launcher. The
+application uses the stable Title ID `000400000E5A1000`, so future releases
+can be installed as upgrades.
+
+### 4. Use the Homebrew Launcher build
 
 The recommended method is to power off the console, remove the SD card, and
 create:

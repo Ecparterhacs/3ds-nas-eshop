@@ -115,14 +115,15 @@ http://<NAS_IP>:40441/api/scan
 
 ### 2. 编译 3DS 客户端
 
-需要 devkitARM、libctru、citro2d 和 citro3d：
+`.3dsx` 需要 devkitARM、libctru、citro2d 和 citro3d。生成 HOME 菜单
+安装包还需要 `makerom` 和 `bannertool`：
 
 ```sh
 export DEVKITPRO=/opt/devkitpro
 export DEVKITARM="$DEVKITPRO/devkitARM"
 export PATH="$DEVKITPRO/tools/bin:$DEVKITARM/bin:$PATH"
 
-make NAS_HOST=192.168.1.123 NAS_PORT=40441 -j4
+make release NAS_HOST=192.168.1.123 NAS_PORT=40441 -j4
 ```
 
 将 `192.168.1.123` 换成 NAS 的固定局域网 IP。输出文件：
@@ -130,11 +131,27 @@ make NAS_HOST=192.168.1.123 NAS_PORT=40441 -j4
 ```text
 3ds-eshop-client.3dsx
 3ds-eshop-client.smdh
+3ds-eshop-client.cia
 ```
 
 完整教程见 [客户端编译与安装](docs/CLIENT.md)。
 
-### 3. 复制到 3DS
+### 3. 安装到 3DS HOME 菜单（推荐）
+
+下载 [最新正式版](https://github.com/Ecparterhacs/3ds-nas-eshop/releases/latest)
+中的 `3ds-eshop-client.cia`，复制到 SD 卡后用 FBI 安装。也可以把 CIA
+放入 NAS 的 `static/` 目录，然后在 FBI 中使用：
+
+```text
+Remote Install → Install from URL
+http://<NAS_IP>:40441/static/3ds-eshop-client.cia
+```
+
+安装完成并退出 FBI 后，HOME 菜单会出现橙色购物袋图标，可以直接启动，
+不再需要先进入 Homebrew Launcher。应用 Title ID 固定为
+`000400000E5A1000`，以后安装同一项目的新版本会覆盖升级。
+
+### 4. 使用 Homebrew Launcher 版本
 
 推荐关机取出 SD 卡，创建目录：
 
