@@ -24,20 +24,48 @@ static void draw_text(Ui *ui, const char *value, float x, float y, float scale,
                       u32 color, float wrap_width)
 {
     C2D_Text text;
+    float measured_width = 0.0f;
+    float measured_height = 0.0f;
+    float fit = 1.0f;
+    float fitted_scale;
+    unsigned line_count = 1;
     const char *input = value && value[0] ? value : "-";
+    const char *cursor;
+
     if (ui->use_zh_font) {
         C2D_TextFontParse(&text, ui->zh_font, ui->text_buf, input);
     } else {
         C2D_TextParse(&text, ui->text_buf, input);
     }
     C2D_TextOptimize(&text);
-    if (wrap_width > 0) {
-        C2D_DrawText(&text, C2D_WithColor | C2D_WordWrap, x, y, 0.5f,
-                     scale, scale, color, wrap_width);
-    } else {
-        C2D_DrawText(&text, C2D_WithColor, x, y, 0.5f,
-                     scale, scale, color);
+
+    /*
+     * The Chinese system font reports a substantially taller glyph box than
+     * citro2d's default font. Fixed scales and WordWrap therefore produce
+     * extra lines that overlap the next UI row on real hardware. Measure the
+     * parsed font, fit it into one nominal 32 px line per explicit newline,
+     * and treat wrap_width as a single-line width limit. Only explicit '\n'
+     * characters are allowed to create another row.
+     */
+    for (cursor = input; *cursor; ++cursor) {
+        if (*cursor == '\n') ++line_count;
     }
+    C2D_TextGetDimensions(
+        &text, scale, scale, &measured_width, &measured_height);
+    if (measured_height > 0.0f) {
+        float maximum_height = 32.0f * scale * (float)line_count;
+        if (measured_height > maximum_height) {
+            fit = maximum_height / measured_height;
+        }
+    }
+    if (wrap_width > 0.0f && measured_width > 0.0f &&
+        measured_width * fit > wrap_width) {
+        float width_fit = wrap_width / measured_width;
+        if (width_fit < fit) fit = width_fit;
+    }
+    fitted_scale = scale * fit;
+    C2D_DrawText(&text, C2D_WithColor, x, y, 0.5f,
+                 fitted_scale, fitted_scale, color);
 }
 
 static void clip_text_units(const char *source, char *output, size_t output_size,
@@ -228,10 +256,10 @@ static void render_top(Ui *ui, const Game *games, int game_count, int selected)
         }
         clip_text_units(game->title, title_text, sizeof(title_text), 20);
         draw_text(ui, title_text, x + 49, y + 7, 0.37f,
-                  active ? COLOR_HEADER : COLOR_TEXT, 0);
+                  active ? COLOR_HEADER : COLOR_TEXT, 128);
         snprintf(text, sizeof(text), "%.0f MB  %s", game->size_mb,
                  game->ext[0] ? game->ext + 1 : "CIA");
-        draw_text(ui, text, x + 49, y + 28, 0.31f, COLOR_MUTED, 0);
+        draw_text(ui, text, x + 49, y + 28, 0.31f, COLOR_MUTED, 128);
     }
 
     snprintf(text, sizeof(text), "Page %d / %d",
@@ -273,10 +301,10 @@ static void render_bottom(Ui *ui, const Game *games, int game_count, int selecte
         draw_text(ui, title_text, 93, 51, 0.46f, COLOR_HEADER, 207);
         snprintf(text, sizeof(text), "%.1f MB   %s", game->size_mb,
                  game->region[0] ? game->region : "CIA");
-        draw_text(ui, text, 93, 96, 0.38f, COLOR_MUTED, 0);
+        draw_text(ui, text, 93, 96, 0.38f, COLOR_MUTED, 207);
         snprintf(text, sizeof(text), "ID %d  %s", game->id,
                  game->title_id[0] ? game->title_id : "no title id");
-        draw_text(ui, text, 93, 117, 0.32f, COLOR_MUTED, 0);
+        draw_text(ui, text, 93, 117, 0.32f, COLOR_MUTED, 207);
 
         C2D_DrawRectSolid(10, 150, 0.1f, 300, 32, COLOR_PANEL_2);
         snprintf(text, sizeof(text), "http://%s:%u%s", NAS_HOST,
@@ -286,16 +314,17 @@ static void render_bottom(Ui *ui, const Game *games, int game_count, int selecte
 
     C2D_DrawRectSolid(0, 190, 0.1f, 320, 50, COLOR_PANEL);
     C2D_DrawRectSolid(7, 197, 0.2f, 96, 34, COLOR_ACCENT);
-    draw_text(ui, "A 极速直装", 18, 204, 0.39f, COLOR_WHITE, 0);
+    draw_text(ui, "A 极速直装", 18, 204, 0.39f, COLOR_WHITE, 76);
     C2D_DrawRectSolid(109, 197, 0.2f, 117, 34, COLOR_OK);
-    draw_text(ui, "Y 下载后安装", 119, 204, 0.37f, COLOR_WHITE, 0);
+    draw_text(ui, "Y 下载后安装", 119, 204, 0.37f, COLOR_WHITE, 97);
     C2D_DrawRectSolid(232, 197, 0.2f, 78, 34, COLOR_PANEL_2);
-    draw_text(ui, "X 刷新", 247, 204, 0.37f, COLOR_TEXT, 0);
+    draw_text(ui, "X 刷新", 247, 204, 0.37f, COLOR_TEXT, 54);
 
     if (show_debug) {
         C2D_DrawRectSolid(7, 38, 0.30f, 306, 148,
                           C2D_Color32(35, 45, 49, 246));
-        draw_text(ui, "DEBUG / 真机诊断", 16, 47, 0.50f, COLOR_GOLD, 0);
+        snprintf(text, sizeof(text), "DEBUG / 真机诊断  %s", CLIENT_BUILD);
+        draw_text(ui, text, 16, 47, 0.50f, COLOR_GOLD, 288);
         snprintf(text, sizeof(text), "Status: %s", status ? status : "-");
         draw_text(ui, text, 16, 72, 0.36f, COLOR_TEXT, 288);
         if (http_debug) {
@@ -387,7 +416,7 @@ static void render_install_overlay(Ui *ui, const Game *games, int game_count,
      * so their glyph boxes cannot overlap on real hardware.
      */
     clip_text_units(install->message, message_text, sizeof(message_text), 42);
-    draw_text(ui, message_text, 18, 82, 0.27f, COLOR_TEXT, 0);
+    draw_text(ui, message_text, 18, 82, 0.27f, COLOR_TEXT, 274);
 
     if (install->stage == INSTALL_STAGE_CONNECTING ||
         install->stage == INSTALL_STAGE_DOWNLOADING ||
@@ -405,7 +434,7 @@ static void render_install_overlay(Ui *ui, const Game *games, int game_count,
         } else {
             snprintf(text, sizeof(text), "0%%   Preparing connection...");
         }
-        draw_text(ui, text, 18, 130, 0.36f, COLOR_MUTED, 0);
+        draw_text(ui, text, 18, 130, 0.36f, COLOR_MUTED, 274);
 
         if (install->bytes_per_second >= 1024.0 * 1024.0) {
             snprintf(speed_text, sizeof(speed_text), "SPEED  %.2f MB/s",
@@ -425,14 +454,14 @@ static void render_install_overlay(Ui *ui, const Game *games, int game_count,
         } else {
             snprintf(eta_text, sizeof(eta_text), "ETA  --:--");
         }
-        draw_text(ui, speed_text, 18, 155, 0.46f, COLOR_ACCENT, 0);
-        draw_text(ui, eta_text, 207, 158, 0.36f, COLOR_MUTED, 0);
+        draw_text(ui, speed_text, 18, 155, 0.46f, COLOR_ACCENT, 174);
+        draw_text(ui, eta_text, 207, 158, 0.36f, COLOR_MUTED, 85);
 
         if (install->title_id != 0) {
             snprintf(text, sizeof(text), "Title ID %016llX%s",
                      (unsigned long long)install->title_id,
                      install->replacing ? "  [overwrite]" : "");
-            draw_text(ui, text, 18, 182, 0.28f, COLOR_MUTED, 0);
+            draw_text(ui, text, 18, 182, 0.28f, COLOR_MUTED, 274);
         } else {
             draw_text(ui, "正在准备安全的 SD 卡安装…", 18, 182, 0.28f,
                       COLOR_MUTED, 0);

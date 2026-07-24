@@ -13,19 +13,6 @@
 项目不包含游戏、Title Key、系统文件或任何 Nintendo 版权内容。
 请仅处理你合法拥有并自行备份的内容。
 
-## 界面预览
-
-以下预览使用虚构游戏名和示例地址，不包含真实游戏、封面或个人游戏清单。
-
-<p align="center">
-  <img src="docs/images/library.svg" alt="3DS NAS eShop 游戏库界面" width="96%">
-</p>
-
-<p align="center">
-  <img src="docs/images/details.svg" alt="商品详情和安装模式按钮" width="48%">
-  <img src="docs/images/install-progress.svg" alt="下载到 SD 卡的安装进度界面" width="48%">
-</p>
-
 ## 功能
 
 - 浏览数百个 `.cia`、`.3ds` 和 `.3dsx` 文件。
