@@ -1,76 +1,83 @@
+<p align="center">
+  <strong>English</strong> |
+  <a href="README.zh-CN.md">简体中文</a>
+</p>
+
+<p align="center">
+  <img src="docs/images/banner-en.png" alt="3DS NAS eShop project banner" width="100%">
+</p>
+
 # 3DS NAS eShop
 
-> 在 Nintendo 3DS 上浏览自己的 NAS 游戏库、查看封面，并将 CIA
-> 直接安装到 SD 卡。
+> Browse your personal NAS game library on a Nintendo 3DS, view cover art,
+> and install CIA files directly to the SD card.
 
-3DS NAS eShop 由两部分组成：
+3DS NAS eShop consists of two parts:
 
-- 一个运行在群晖或普通 Linux NAS 上的 Flask 服务，负责扫描文件、
-  管理元数据和封面并提供下载接口。
-- 一个基于 libctru/citro2d 的 3DS `.3dsx` 客户端，提供接近 eShop
-  的双屏界面、Unicode 游戏名、封面和安装进度。
+- A Flask service for Synology or any standard Linux NAS. It scans files,
+  manages metadata and cover art, and serves downloads over your LAN.
+- A libctru/citro2d `.3dsx` client with an eShop-inspired dual-screen UI,
+  Unicode game titles, cover art, and detailed installation progress.
 
-项目不包含游戏、Title Key、系统文件或任何 Nintendo 版权内容。
-请仅处理你合法拥有并自行备份的内容。
+This project does not include games, Title Keys, system files, or any
+Nintendo copyrighted content. Only use content you legally own and have
+backed up yourself.
+
+## Design previews
+
+> The following images illustrate the current UI colors and structure; they
+> are not photos of a real console. They use fictional titles and example
+> addresses. Font rendering, sizes, and spacing may differ slightly on real
+> hardware.
 
 <p align="center">
-  <img src="docs/images/3ds-nas-eshop-showcase.png" alt="3DS NAS eShop 双屏界面效果展示" width="88%">
+  <img src="docs/images/library.svg" alt="3DS NAS eShop library design preview" width="96%">
 </p>
 
 <p align="center">
-  <sub>项目 UI 合成效果展示；真机字体、封面和游戏内容以实际运行结果为准。</sub>
+  <img src="docs/images/details.svg" alt="Game details and install buttons design preview" width="48%">
+  <img src="docs/images/install-progress.svg" alt="Download and installation progress design preview" width="48%">
 </p>
 
-## 设计预览
+## Features
 
-> 以下图片是按当前 UI 配色和结构绘制的设计预览，不是真机截图。
-> 预览使用虚构游戏名和示例地址；真机字体渲染、字号和间距可能略有差异。
+- Browse hundreds of `.cia`, `.3ds`, and `.3dsx` files.
+- Parse JSON `\uXXXX`, UTF-16 surrogate pairs, and `null` values.
+- Display Unicode titles, cover art, file size, region, and Title ID.
+- `A` fast direct install: pipelined NAS download and AM installation with
+  double buffering.
+- `Y` staged install: download to SD first, resume interrupted downloads, and
+  automatically remove the cache after a successful installation.
+- Validate CIA Title IDs before installation, allow only SD user-content
+  categories, and reject system titles.
+- Show progress, real-time speed, ETA, Title ID, and remaining storage.
+- Manage scans, names, cover uploads, and downloads from the web interface.
+- Optionally match missing cover art with the K73 helper script.
 
-<p align="center">
-  <img src="docs/images/library.svg" alt="3DS NAS eShop 游戏库设计预览" width="96%">
-</p>
-
-<p align="center">
-  <img src="docs/images/details.svg" alt="商品详情与安装按钮设计预览" width="48%">
-  <img src="docs/images/install-progress.svg" alt="下载和安装进度设计预览" width="48%">
-</p>
-
-## 功能
-
-- 浏览数百个 `.cia`、`.3ds` 和 `.3dsx` 文件。
-- 解析 JSON `\uXXXX`、UTF-16 surrogate pair 和 `null`。
-- 显示中文标题、封面、文件大小、区域和 Title ID。
-- `A` 极速直装：NAS 下载和 AM 安装采用双缓冲流水线。
-- `Y` 稳定安装：先下载到 SD 卡，支持断点续传，成功后自动删除缓存。
-- 安装前校验 CIA Title ID，只允许 SD 卡用户内容类型，拒绝系统标题。
-- 显示进度、实时速度、ETA、Title ID 和剩余空间。
-- Web 管理页支持扫描、改名、上传封面和下载。
-- 可选的 K73 封面匹配脚本，只补齐缺失封面。
-
-## 目录结构
+## Repository layout
 
 ```text
 3ds-nas-eshop/
-├── include/                 3DS 客户端头文件
-├── source/                  3DS 客户端源码
-├── tests/                   JSON 与 CIA 安全校验测试
+├── include/                 3DS client headers
+├── source/                  3DS client source
+├── tests/                   JSON and CIA safety tests
 ├── server/
-│   ├── nas_server.py        NAS Flask 服务
-│   ├── requirements.txt     Python 依赖
-│   └── env.example          环境变量示例
-├── scripts/                 可选封面匹配脚本
+│   ├── nas_server.py        NAS Flask service
+│   ├── requirements.txt     Python dependencies
+│   └── env.example          Environment variable example
+├── scripts/                 Optional cover-matching helper
 ├── docs/
-│   ├── SYNOLOGY.md          群晖逐步部署教程
-│   ├── CLIENT.md            编译、复制和使用客户端
-│   └── TROUBLESHOOTING.md   常见问题
+│   ├── SYNOLOGY.md          Step-by-step Synology guide
+│   ├── CLIENT.md            Build, copy, and use the client
+│   └── TROUBLESHOOTING.md   Common problems
 └── Makefile
 ```
 
-## 快速开始
+## Quick start
 
-### 1. 部署 NAS 服务
+### 1. Deploy the NAS service
 
-群晖推荐布局：
+Recommended layout on Synology:
 
 ```text
 /volume1/homes/<DSM_USER>/3ds-nas-eshop/
@@ -81,14 +88,15 @@
     └── covers/
 
 /volume2/myfile/3dsrom/
-├── 游戏 A.cia
-├── 游戏 B/
-│   └── 游戏 B [0004000012345600].cia
+├── Game A.cia
+├── Game B/
+│   └── Game B [0004000012345600].cia
 └── static/
     └── 3ds-eshop-client.3dsx
 ```
 
-服务端通过环境变量读取这些目录，不要求使用相同卷号：
+The service reads these locations from environment variables, so the volume
+numbers do not need to match the example:
 
 ```sh
 export ESHOP_GAMES_DIR="/volume2/myfile/3dsrom"
@@ -97,24 +105,25 @@ export ESHOP_PORT="40441"
 python3 server/nas_server.py
 ```
 
-浏览器打开：
+Open the management page:
 
 ```text
 http://<NAS_IP>:40441/
 ```
 
-然后点击“扫描新游戏”，或者访问：
+Select **Scan for new games**, or visit:
 
 ```text
 http://<NAS_IP>:40441/api/scan
 ```
 
-完整的建目录、从 Mac 复制文件、安装 Python 依赖、后台启动和 DSM
-任务计划设置见 [群晖部署教程](docs/SYNOLOGY.md)。
+For directory creation, copying files from macOS, Python dependencies,
+background startup, and DSM Task Scheduler configuration, see the
+[Synology deployment guide](docs/SYNOLOGY.md) (currently in Chinese).
 
-### 2. 编译 3DS 客户端
+### 2. Build the 3DS client
 
-需要 devkitARM、libctru、citro2d 和 citro3d：
+You need devkitARM, libctru, citro2d, and citro3d:
 
 ```sh
 export DEVKITPRO=/opt/devkitpro
@@ -124,60 +133,67 @@ export PATH="$DEVKITPRO/tools/bin:$DEVKITARM/bin:$PATH"
 make NAS_HOST=192.168.1.123 NAS_PORT=40441 -j4
 ```
 
-将 `192.168.1.123` 换成 NAS 的固定局域网 IP。输出文件：
+Replace `192.168.1.123` with the fixed LAN address of your NAS. The build
+produces:
 
 ```text
 3ds-eshop-client.3dsx
 3ds-eshop-client.smdh
 ```
 
-完整教程见 [客户端编译与安装](docs/CLIENT.md)。
+See [building and installing the client](docs/CLIENT.md) for the complete
+guide (currently in Chinese).
 
-### 3. 复制到 3DS
+### 3. Copy the client to your 3DS
 
-推荐关机取出 SD 卡，创建目录：
+The recommended method is to power off the console, remove the SD card, and
+create:
 
 ```text
 SD:/3ds/3ds-nas-eshop/
 ```
 
-复制并改名为：
+Copy and rename the files to:
 
 ```text
 SD:/3ds/3ds-nas-eshop/3ds-nas-eshop.3dsx
 SD:/3ds/3ds-nas-eshop/3ds-nas-eshop.smdh
 ```
 
-把 SD 卡放回 3DS，从 Homebrew Launcher 启动。
+Return the SD card to the console and launch the app from Homebrew Launcher.
 
-## 操作
+## Controls
 
-| 按键 | 功能 |
+| Button | Action |
 | --- | --- |
-| 十字键 | 选择游戏 |
-| `L` / `R` | 翻页 |
-| `A` | 极速直装；再次按 `A` 确认 |
-| `Y` | 下载到 SD 后安装；再次按 `A` 确认 |
-| `B` | 取消安装或退出 |
-| `X` | 重新读取 NAS 游戏列表 |
-| `SELECT` | 开关真机诊断信息 |
-| `START` | 退出客户端 |
+| D-pad | Select a game |
+| `L` / `R` | Change page |
+| `A` | Fast direct install; press `A` again to confirm |
+| `Y` | Download to SD, then install; press `A` again to confirm |
+| `B` | Cancel installation or exit |
+| `X` | Reload the NAS game list |
+| `SELECT` | Toggle real-hardware diagnostics |
+| `START` | Exit the client |
 
-稳定模式缓存位置：
+Staged-install cache paths:
 
 ```text
-SD:/3ds/nas-eshop/cache/game_<数据库ID>.cia.part
-SD:/3ds/nas-eshop/cache/game_<数据库ID>.cia
+SD:/3ds/nas-eshop/cache/game_<database-ID>.cia.part
+SD:/3ds/nas-eshop/cache/game_<database-ID>.cia
 ```
 
-- 下载中断：保留 `.cia.part`，下次选择同一游戏会尝试续传。
-- 下载完成但安装失败：保留 `.cia`，下次直接重试安装。
-- AM 确认安装成功：自动删除 `.cia`。
-- 稳定模式安装时大约需要 CIA 文件大小两倍的可用空间。
+- An interrupted download keeps the `.cia.part` file and attempts to resume
+  the next time you select the same game.
+- If downloading finishes but installation fails, the `.cia` file is kept so
+  installation can be retried without downloading it again.
+- After AM confirms a successful installation, the `.cia` cache is removed.
+- Staged installation requires approximately twice the CIA file size in free
+  storage.
 
-## 封面
+## Cover art
 
-Web 管理页可以给单个游戏上传封面或填写图片 URL。还可以运行：
+Use the web interface to upload cover art for an individual game or provide
+an image URL. You can also run:
 
 ```sh
 ESHOP_NAS=http://127.0.0.1:40441 \
@@ -187,26 +203,30 @@ ESHOP_NAS=http://127.0.0.1:40441 \
   python3 scripts/k73_auto_covers.py
 ```
 
-脚本只更新没有封面的游戏。第三方页面结构随时可能变化；请遵守来源网站
-的使用条款和访问频率限制。抓取生成的目录缓存与匹配报告不会提交到仓库。
+The script only updates games without cover art. Third-party page structures
+may change at any time; follow the source website's terms of use and rate
+limits. Generated crawl caches and match reports are not committed.
 
-## 测试
+## Tests
 
 ```sh
 make test
 ```
 
-测试使用合成 CIA 头部，不需要也不会读取真实游戏。
+The tests use synthetic CIA headers and neither require nor read real games.
 
-## 安全说明
+## Security
 
-- Flask API 当前没有登录验证，只应在可信局域网内运行。
-- 不要把 `40441` 端口映射到互联网。
-- 建议给 NAS 设置固定 DHCP 租约，并在防火墙中只允许局域网访问。
-- `/api/rescan` 会重建元数据库，但不会删除游戏文件。
-- 客户端的直接安装仍属于高权限操作；安装期间不要关机或拔出 SD 卡。
+- The Flask API currently has no authentication. Run it only on a trusted LAN.
+- Do not expose port `40441` to the Internet.
+- Give the NAS a fixed DHCP lease and restrict access to the LAN in your
+  firewall.
+- `/api/rescan` rebuilds the metadata database but does not delete game files.
+- Direct installation is a privileged operation. Do not power off the console
+  or remove the SD card during installation.
 
-## 开源许可
+## License
 
-代码使用 [MIT License](LICENSE)。Nintendo、Nintendo 3DS、FBI 及其他名称
-归各自权利人所有；本项目与 Nintendo 无关。
+The code is licensed under the [MIT License](LICENSE). Nintendo, Nintendo 3DS,
+FBI, and all other names belong to their respective owners. This project is
+not affiliated with Nintendo.
